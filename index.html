@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contador de Asados</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="shortcut icon" href="/img/favicon.png" type="image/x-icon">
+</head>
+<body>
+  <header class="top">
+    <h1>Contador de Asados</h1>
+  </header>
+
+  <div class="container">
+    <section class="card" id="auth-card" style="margin-bottom:16px">
+      <header><h2>Registrar Asado</h2></header>
+      <div class="content">
+        <div style="display:flex;gap:8px;align-items:center;max-width:400px">
+          <input type="password" id="admin-password" placeholder="Contraseña" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:10px;color:var(--ink);background:#0b1433;font-size:1rem" />
+          <button id="auth-btn" class="btn" style="padding:10px 16px">▶</button>
+        </div>
+        <p id="auth-error" class="muted" style="margin-top:8px;font-size:0.85rem;display:none;color:#ff6b6b">❌ Contraseña incorrecta</p>
+        <p class="muted" style="margin-top:8px;font-size:0.85rem">Ingresá la contraseña para registrar asados</p>
+      </div>
+    </section>
+
+    <section class="card" id="form-card" style="display:none;margin-bottom:16px">
+      <header><h2>Registrar Nuevo Asado</h2></header>
+      <div class="content">
+        <div style="display:flex;flex-direction:column;gap:14px;max-width:500px">
+          <div>
+            <label class="muted" style="display:block;margin-bottom:6px">Fecha del asado</label>
+            <input id="fecha" type="date" style="width:100%" />
+          </div>
+          
+          <div>
+            <label class="muted" style="display:block;margin-bottom:6px">¿Quiénes vinieron?</label>
+            <div id="amigos-list" class="amigos-grid"></div>
+          </div>
+
+          <div class="row" style="gap:10px;margin-top:10px">
+            <button class="btn good" id="guardar-btn">Guardar Asado</button>
+            <button class="btn" id="cancelar-btn">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="total-asados">0</div>
+        <div class="stat-label">Total de Asados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="promedio-asistencia">0%</div>
+        <div class="stat-label">Asistencia Promedio</div>
+      </div>
+    </div>
+
+    <div class="lower">
+      <section class="card">
+        <header><h2>🏆 Ranking de Asistencia</h2></header>
+        <div class="content">
+          <table id="tabla-ranking">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Amigo</th>
+                <th>Asados</th>
+                <th>%</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <header><h2>📅 Historial de Asados</h2></header>
+        <div class="content" id="historial"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="deleteModal">
+    <div class="modal">
+      <header><h3>Eliminar Asado</h3></header>
+      <div class="content">
+        <p>¿Seguro que querés eliminar este registro? Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="cancelDelete">Cancelar</button>
+        <button class="btn danger" id="confirmDelete">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
