@@ -3,34 +3,46 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Contador de Asados</title>
+  <title>Contador de Juntadas</title>
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="shortcut icon" href="/img/favicon.png" type="image/x-icon">
 </head>
 <body>
   <header class="top">
-    <h1>Contador de Asados</h1>
+    <h1>Contador de Juntadas</h1>
   </header>
 
   <div class="container">
+    <!-- Card de autenticación -->
     <section class="card" id="auth-card" style="margin-bottom:16px">
-      <header><h2>Registrar Asado</h2></header>
+      <header><h2>Registrar Juntada</h2></header>
       <div class="content">
         <div style="display:flex;gap:8px;align-items:center;max-width:400px">
-          <input type="password" id="admin-password" placeholder="Contraseña" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:10px;color:var(--ink);background:#0b1433;font-size:1rem" />
+          <input type="password" id="admin-password" placeholder="Contraseña" style="flex:1;padding:10px 12px;border:2px solid var(--line);border-radius:10px;color:var(--ink);background:rgba(37, 37, 37, 0.8);font-size:1rem" />
           <button id="auth-btn" class="btn" style="padding:10px 16px">▶</button>
         </div>
         <p id="auth-error" class="muted" style="margin-top:8px;font-size:0.85rem;display:none;color:#ff6b6b">❌ Contraseña incorrecta</p>
-        <p class="muted" style="margin-top:8px;font-size:0.85rem">Ingresá la contraseña para registrar asados</p>
+        <p class="muted" style="margin-top:8px;font-size:0.85rem">Ingresá la contraseña para registrar juntadas</p>
       </div>
     </section>
 
+    <!-- Formulario para registrar juntada -->
     <section class="card" id="form-card" style="display:none;margin-bottom:16px">
-      <header><h2>Registrar Nuevo Asado</h2></header>
+      <header><h2>Registrar Nueva Juntada</h2></header>
       <div class="content">
-        <div style="display:flex;flex-direction:column;gap:14px;max-width:500px">
+        <div style="display:flex;flex-direction:column;gap:14px;max-width:600px">
           <div>
-            <label class="muted" style="display:block;margin-bottom:6px">Fecha del asado</label>
+            <label class="muted" style="display:block;margin-bottom:6px">Título de la juntada</label>
+            <input id="titulo" type="text" placeholder="Ej: Asado en lo de Joaco" style="width:100%" />
+          </div>
+
+          <div>
+            <label class="muted" style="display:block;margin-bottom:6px">Ubicación</label>
+            <input id="ubicacion" type="text" placeholder="Ej: Casa de Joaco, Palermo" style="width:100%" />
+          </div>
+          
+          <div>
+            <label class="muted" style="display:block;margin-bottom:6px">Fecha de la juntada</label>
             <input id="fecha" type="date" style="width:100%" />
           </div>
           
@@ -40,17 +52,18 @@
           </div>
 
           <div class="row" style="gap:10px;margin-top:10px">
-            <button class="btn good" id="guardar-btn">Guardar Asado</button>
+            <button class="btn good" id="guardar-btn">Guardar Juntada</button>
             <button class="btn" id="cancelar-btn">Cancelar</button>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- Estadísticas principales -->
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-value" id="total-asados">0</div>
-        <div class="stat-label">Total de Asados</div>
+        <div class="stat-value" id="total-juntadas">0</div>
+        <div class="stat-label">Total de Juntadas</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="promedio-asistencia">0%</div>
@@ -59,6 +72,7 @@
     </div>
 
     <div class="lower">
+      <!-- Tabla de posiciones -->
       <section class="card">
         <header><h2>🏆 Ranking de Asistencia</h2></header>
         <div class="content">
@@ -67,7 +81,7 @@
               <tr>
                 <th>#</th>
                 <th>Amigo</th>
-                <th>Asados</th>
+                <th>Juntadas</th>
                 <th>%</th>
               </tr>
             </thead>
@@ -76,16 +90,18 @@
         </div>
       </section>
 
+      <!-- Historial -->
       <section class="card">
-        <header><h2>📅 Historial de Asados</h2></header>
+        <header><h2>📅 Historial de Juntadas</h2></header>
         <div class="content" id="historial"></div>
       </section>
     </div>
   </div>
 
+  <!-- Modal eliminar -->
   <div class="modal-backdrop" id="deleteModal">
     <div class="modal">
-      <header><h3>Eliminar Asado</h3></header>
+      <header><h3>Eliminar Juntada</h3></header>
       <div class="content">
         <p>¿Seguro que querés eliminar este registro? Esta acción no se puede deshacer.</p>
       </div>

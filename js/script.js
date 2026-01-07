@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
   // ==================== CONFIGURACIÓN ====================
-  const ADMIN_PASSWORD = 'asado';
+  const ADMIN_PASSWORD = 'contraseña';
   const SHEETDB_URL = 'https://sheetdb.io/api/v1/6uuifj7mv9hc5';
   
   // Lista de amigos - Agregá o quitá según necesites
@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     'Nacho'
   ].sort((a, b) => a.localeCompare(b, 'es'));
   
+  // ==================== UTILIDADES ====================
   const $ = sel => document.querySelector(sel);
   const today = () => new Date().toISOString().slice(0, 10);
   const genId = () => (window.crypto && typeof window.crypto.randomUUID === 'function' 
@@ -26,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return `${d}/${m}/${y}`;
   };
   
+  // ==================== STORAGE (SheetDB) ====================
   const store = {
     async read() {
       try {
@@ -44,13 +46,13 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ Datos leídos:', rows.length, 'filas');
         
         const data = this.parseSheetData(rows);
-        localStorage.setItem('asados-data', JSON.stringify(data));
+        localStorage.setItem('juntadas-data', JSON.stringify(data));
         
         return data;
       } catch (error) {
         console.error('❌ Error leyendo de SheetDB:', error);
         try {
-          const localData = JSON.parse(localStorage.getItem('asados-data') || '[]');
+          const localData = JSON.parse(localStorage.getItem('juntadas-data') || '[]');
           console.log('📦 Usando datos de localStorage como fallback');
           return localData;
         } catch (e) {
@@ -65,6 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
           return {
             id: row.id || genId(),
+            titulo: row.titulo || 'Sin título',
+            ubicacion: row.ubicacion || 'Sin ubicación',
             date: row.date,
             asistentes: JSON.parse(row.asistentes || '[]')
           };
@@ -79,10 +83,12 @@ document.addEventListener('DOMContentLoaded', function() {
       try {
         console.log('💾 Guardando datos en SheetDB...');
         
-        const rows = data.map(asado => ({
-          id: asado.id,
-          date: asado.date,
-          asistentes: JSON.stringify(asado.asistentes)
+        const rows = data.map(juntada => ({
+          id: juntada.id,
+          titulo: juntada.titulo,
+          ubicacion: juntada.ubicacion,
+          date: juntada.date,
+          asistentes: JSON.stringify(juntada.asistentes)
         }));
         
         await fetch(SHEETDB_URL + '/all', { method: 'DELETE' });
@@ -102,19 +108,21 @@ document.addEventListener('DOMContentLoaded', function() {
           console.log('✅ Guardado exitoso');
         }
         
-        localStorage.setItem('asados-data', JSON.stringify(data));
+        localStorage.setItem('juntadas-data', JSON.stringify(data));
         return { success: true };
       } catch (error) {
         console.error('❌ Error guardando en SheetDB:', error);
-        localStorage.setItem('asados-data', JSON.stringify(data));
+        localStorage.setItem('juntadas-data', JSON.stringify(data));
         throw error;
       }
     }
   };
   
-  let asados = [];
+  // ==================== ESTADO ====================
+  let juntadas = [];
   let isAdminMode = false;
   
+  // ==================== AUTENTICACIÓN ====================
   const authCard = $('#auth-card');
   const formCard = $('#form-card');
   const passwordInput = $('#admin-password');
@@ -155,6 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   authBtn.addEventListener('click', attemptLogin);
   
+  // ==================== FORMULARIO ====================
   function renderAmigosList() {
     const container = $('#amigos-list');
     container.innerHTML = AMIGOS.map(amigo => `
@@ -179,10 +188,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  async function guardarAsado() {
+  async function guardarJuntada() {
+    const titulo = $('#titulo').value.trim();
+    const ubicacion = $('#ubicacion').value.trim();
     const fecha = $('#fecha').value || today();
     const checkboxes = document.querySelectorAll('#amigos-list input[type="checkbox"]:checked');
     const asistentes = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (!titulo) {
+      alert('Ingresá un título para la juntada');
+      return;
+    }
+    
+    if (!ubicacion) {
+      alert('Ingresá la ubicación de la juntada');
+      return;
+    }
     
     if (asistentes.length === 0) {
       alert('Seleccioná al menos un asistente');
@@ -190,29 +211,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     try {
-      console.log('💾 Guardando asado...');
+      console.log('💾 Guardando juntada...');
       
-      const nuevoAsado = {
+      const nuevaJuntada = {
         id: genId(),
+        titulo: titulo,
+        ubicacion: ubicacion,
         date: fecha,
         asistentes: asistentes
       };
       
-      asados.push(nuevoAsado);
-      await store.write(asados);
+      juntadas.push(nuevaJuntada);
+      await store.write(juntadas);
       
-      console.log('✅ Asado guardado');
-      alert('✅ Asado registrado correctamente');
+      console.log('✅ Juntada guardada');
+      alert('✅ Juntada registrada correctamente');
       
       limpiarFormulario();
       renderAll();
     } catch (error) {
-      console.error('❌ Error guardando asado:', error);
+      console.error('❌ Error guardando juntada:', error);
       alert('❌ Error al guardar. Revisá la consola.');
     }
   }
   
   function limpiarFormulario() {
+    $('#titulo').value = '';
+    $('#ubicacion').value = '';
     $('#fecha').value = today();
     document.querySelectorAll('#amigos-list input[type="checkbox"]').forEach(cb => {
       cb.checked = false;
@@ -226,37 +251,37 @@ document.addEventListener('DOMContentLoaded', function() {
     checkAuth();
   }
   
-  $('#guardar-btn').addEventListener('click', guardarAsado);
+  $('#guardar-btn').addEventListener('click', guardarJuntada);
   $('#cancelar-btn').addEventListener('click', cancelarFormulario);
   
   // ==================== ESTADÍSTICAS ====================
   function calcularEstadisticas() {
-    const totalAsados = asados.length;
+    const totalJuntadas = juntadas.length;
     const stats = new Map();
     
     AMIGOS.forEach(amigo => {
       stats.set(amigo, { nombre: amigo, asistencias: 0, porcentaje: 0 });
     });
     
-    asados.forEach(asado => {
-      asado.asistentes.forEach(amigo => {
+    juntadas.forEach(juntada => {
+      juntada.asistentes.forEach(amigo => {
         const stat = stats.get(amigo);
         if (stat) stat.asistencias++;
       });
     });
     
     stats.forEach((stat, amigo) => {
-      stat.porcentaje = totalAsados > 0 
-        ? Math.round((stat.asistencias / totalAsados) * 100) 
+      stat.porcentaje = totalJuntadas > 0 
+        ? Math.round((stat.asistencias / totalJuntadas) * 100) 
         : 0;
     });
     
-    const promedioGeneral = totalAsados > 0
-      ? Math.round((Array.from(stats.values()).reduce((sum, s) => sum + s.asistencias, 0) / (totalAsados * AMIGOS.length)) * 100)
+    const promedioGeneral = totalJuntadas > 0
+      ? Math.round((Array.from(stats.values()).reduce((sum, s) => sum + s.asistencias, 0) / (totalJuntadas * AMIGOS.length)) * 100)
       : 0;
     
     return {
-      totalAsados,
+      totalJuntadas,
       promedioGeneral,
       ranking: Array.from(stats.values())
         .sort((a, b) => b.asistencias - a.asistencias || a.nombre.localeCompare(b.nombre, 'es'))
@@ -266,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function renderEstadisticas() {
     const stats = calcularEstadisticas();
     
-    $('#total-asados').textContent = stats.totalAsados;
+    $('#total-juntadas').textContent = stats.totalJuntadas;
     $('#promedio-asistencia').textContent = stats.promedioGeneral + '%';
   }
   
@@ -302,32 +327,39 @@ document.addEventListener('DOMContentLoaded', function() {
     }).join('');
   }
   
+  // ==================== HISTORIAL ====================
   function renderHistorial() {
     const container = $('#historial');
     
-    if (asados.length === 0) {
-      container.innerHTML = '<p class="empty">No hay asados registrados todavía</p>';
+    if (juntadas.length === 0) {
+      container.innerHTML = '<p class="empty">No hay juntadas registradas todavía</p>';
       return;
     }
     
-    const sorted = asados.slice().sort((a, b) => a.date < b.date ? 1 : -1);
+    const sorted = juntadas.slice().sort((a, b) => a.date < b.date ? 1 : -1);
     
-    container.innerHTML = sorted.map(asado => {
+    container.innerHTML = sorted.map(juntada => {
       const deleteBtn = isAdminMode 
-        ? `<button class="btn danger eliminar-btn" data-id="${asado.id}" style="font-size:0.85rem;padding:8px 12px">Eliminar</button>` 
+        ? `<button class="btn danger eliminar-btn" data-id="${juntada.id}" style="font-size:0.85rem;padding:8px 12px">Eliminar</button>` 
         : '';
       
       return `
         <div class="historial-item">
           <div class="historial-header">
-            <div class="historial-date">📅 ${formatDateDMY(asado.date)}</div>
+            <div>
+              <div class="historial-date">${juntada.titulo}</div>
+              <div style="margin-top:4px">
+                <span class="muted" style="font-size:0.85rem">📍 ${juntada.ubicacion}</span>
+                <span class="muted" style="font-size:0.85rem;margin-left:12px">📅 ${formatDateDMY(juntada.date)}</span>
+              </div>
+            </div>
             ${deleteBtn}
           </div>
           <div style="margin-top:8px">
-            <span class="muted" style="font-size:0.85rem">Asistieron: ${asado.asistentes.length} personas</span>
+            <span class="muted" style="font-size:0.85rem">Asistieron: ${juntada.asistentes.length} personas</span>
           </div>
           <div class="historial-asistentes">
-            ${asado.asistentes.map(a => `<span class="asistente-badge">${a}</span>`).join('')}
+            ${juntada.asistentes.map(a => `<span class="asistente-badge">${a}</span>`).join('')}
           </div>
         </div>
       `;
@@ -340,6 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
+  // ==================== ELIMINAR ====================
   let pendingDeleteId = null;
   const modal = $('#deleteModal');
   const btnCancel = $('#cancelDelete');
@@ -355,15 +388,15 @@ document.addEventListener('DOMContentLoaded', function() {
     modal.classList.remove('show');
   }
   
-  async function eliminarAsado(id) {
+  async function eliminarJuntada(id) {
     try {
-      console.log('🗑️ Eliminando asado:', id);
-      asados = asados.filter(a => a.id !== id);
-      await store.write(asados);
-      console.log('✅ Asado eliminado');
+      console.log('🗑️ Eliminando juntada:', id);
+      juntadas = juntadas.filter(j => j.id !== id);
+      await store.write(juntadas);
+      console.log('✅ Juntada eliminada');
       renderAll();
     } catch (error) {
-      console.error('❌ Error eliminando asado:', error);
+      console.error('❌ Error eliminando juntada:', error);
       alert('Error al eliminar. Intentá de nuevo.');
     }
   }
@@ -371,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
   btnCancel.addEventListener('click', closeDeleteModal);
   btnConfirm.addEventListener('click', async () => {
     if (pendingDeleteId) {
-      await eliminarAsado(pendingDeleteId);
+      await eliminarJuntada(pendingDeleteId);
     }
     closeDeleteModal();
   });
@@ -384,16 +417,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.key === 'Escape') closeDeleteModal();
   });
   
+  // ==================== RENDER GENERAL ====================
   function renderAll() {
     renderEstadisticas();
     renderRanking();
     renderHistorial();
   }
   
+  // ==================== INICIALIZACIÓN ====================
   async function init() {
     try {
       console.log('🚀 Iniciando aplicación...');
-      asados = await store.read();
+      juntadas = await store.read();
       $('#fecha').value = today();
       renderAmigosList();
       checkAuth();
@@ -404,17 +439,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
+  // Auto-refresh cada 30 segundos
   setInterval(async () => {
     try {
       const newData = await store.read();
-      if (JSON.stringify(newData) !== JSON.stringify(asados)) {
+      if (JSON.stringify(newData) !== JSON.stringify(juntadas)) {
         console.log('🔄 Cambios detectados, actualizando...');
-        asados = newData;
+        juntadas = newData;
         renderAll();
-        }
-        } catch (error) {
-        console.error('❌ Error en auto-refresh:', error);
-        }
-       }, 30000);
-    init();
+      }
+    } catch (error) {
+      console.error('❌ Error en auto-refresh:', error);
+    }
+  }, 30000);
+  
+  init();
 });
