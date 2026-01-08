@@ -9,11 +9,10 @@
 </head>
 <body>
   <header class="top">
-    <h1>Contador de Juntadas</h1>
+    <h1>🎉 Contador de Juntadas</h1>
   </header>
 
   <div class="container">
-    <!-- Card de autenticación -->
     <section class="card" id="auth-card" style="margin-bottom:16px">
       <header><h2>Registrar Juntada</h2></header>
       <div class="content">
@@ -26,7 +25,6 @@
       </div>
     </section>
 
-    <!-- Formulario para registrar juntada -->
     <section class="card" id="form-card" style="display:none;margin-bottom:16px">
       <header><h2>Registrar Nueva Juntada</h2></header>
       <div class="content">
@@ -36,14 +34,31 @@
             <input id="titulo" type="text" placeholder="Ej: Asado en lo de Joaco" style="width:100%" />
           </div>
 
-          <div>
-            <label class="muted" style="display:block;margin-bottom:6px">Ubicación</label>
-            <input id="ubicacion" type="text" placeholder="Ej: Casa de Joaco, Palermo" style="width:100%" />
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <label class="muted" style="display:block;margin-bottom:6px">Ubicación</label>
+              <input id="ubicacion" type="text" placeholder="Ej: Palermo" style="width:100%" />
+            </div>
+            
+            <div>
+              <label class="muted" style="display:block;margin-bottom:6px">Fecha</label>
+              <input id="fecha" type="date" style="width:100%" />
+            </div>
           </div>
-          
-          <div>
-            <label class="muted" style="display:block;margin-bottom:6px">Fecha de la juntada</label>
-            <input id="fecha" type="date" style="width:100%" />
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <label class="muted" style="display:block;margin-bottom:6px">Puntos</label>
+              <input id="puntos" type="number" min="1" value="1" style="width:100%" />
+              <p class="muted" style="font-size:0.75rem;margin:4px 0 0 0">Juntadas especiales pueden valer más</p>
+            </div>
+
+            <div>
+              <label class="muted" style="display:block;margin-bottom:6px">Sede (opcional)</label>
+              <select id="sede" style="width:100%;padding:12px 16px;border:2px solid var(--line);border-radius:12px;color:var(--ink);background:rgba(37, 37, 37, 0.8);font-family:inherit;cursor:pointer">
+                <option value="">Sin sede específica</option>
+              </select>
+            </div>
           </div>
           
           <div>
@@ -59,7 +74,6 @@
       </div>
     </section>
 
-    <!-- Estadísticas principales -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-value" id="total-juntadas">0</div>
@@ -69,10 +83,13 @@
         <div class="stat-value" id="promedio-asistencia">0%</div>
         <div class="stat-label">Asistencia Promedio</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-value" id="total-puntos">0</div>
+        <div class="stat-label">Puntos Totales</div>
+      </div>
     </div>
 
     <div class="lower">
-      <!-- Tabla de posiciones -->
       <section class="card">
         <header><h2>🏆 Ranking de Asistencia</h2></header>
         <div class="content">
@@ -82,6 +99,7 @@
                 <th>#</th>
                 <th>Amigo</th>
                 <th>Juntadas</th>
+                <th>Puntos</th>
                 <th>%</th>
               </tr>
             </thead>
@@ -90,7 +108,6 @@
         </div>
       </section>
 
-      <!-- Historial -->
       <section class="card">
         <header><h2>📅 Historial de Juntadas</h2></header>
         <div class="content" id="historial"></div>
@@ -98,7 +115,6 @@
     </div>
   </div>
 
-  <!-- Modal eliminar -->
   <div class="modal-backdrop" id="deleteModal">
     <div class="modal">
       <header><h3>Eliminar Juntada</h3></header>

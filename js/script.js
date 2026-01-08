@@ -1,9 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // ==================== CONFIGURACIÓN ====================
   const ADMIN_PASSWORD = 'contraseña';
   const SHEETDB_URL = 'https://sheetdb.io/api/v1/6uuifj7mv9hc5';
   
-  // Lista de amigos - Agregá o quitá según necesites
   const AMIGOS = [
     'Diego',
     'Joaco',
@@ -12,10 +10,10 @@ document.addEventListener('DOMContentLoaded', function() {
     'Fede',
     'Gata',
     'Monti',
-    'Nacho'
+    'Nacho',
+    'cuca'
   ].sort((a, b) => a.localeCompare(b, 'es'));
   
-  // ==================== UTILIDADES ====================
   const $ = sel => document.querySelector(sel);
   const today = () => new Date().toISOString().slice(0, 10);
   const genId = () => (window.crypto && typeof window.crypto.randomUUID === 'function' 
@@ -27,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
     return `${d}/${m}/${y}`;
   };
   
-  // ==================== STORAGE (SheetDB) ====================
   const store = {
     async read() {
       try {
@@ -70,6 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
             titulo: row.titulo || 'Sin título',
             ubicacion: row.ubicacion || 'Sin ubicación',
             date: row.date,
+            puntos: parseInt(row.puntos) || 1,
+            sede: row.sede || '',
             asistentes: JSON.parse(row.asistentes || '[]')
           };
         } catch (e) {
@@ -88,6 +87,8 @@ document.addEventListener('DOMContentLoaded', function() {
           titulo: juntada.titulo,
           ubicacion: juntada.ubicacion,
           date: juntada.date,
+          puntos: juntada.puntos,
+          sede: juntada.sede || '',
           asistentes: JSON.stringify(juntada.asistentes)
         }));
         
@@ -118,11 +119,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   };
   
-  // ==================== ESTADO ====================
   let juntadas = [];
   let isAdminMode = false;
   
-  // ==================== AUTENTICACIÓN ====================
   const authCard = $('#auth-card');
   const formCard = $('#form-card');
   const passwordInput = $('#admin-password');
@@ -163,7 +162,12 @@ document.addEventListener('DOMContentLoaded', function() {
   
   authBtn.addEventListener('click', attemptLogin);
   
-  // ==================== FORMULARIO ====================
+  function renderSedeOptions() {
+    const sedeSelect = $('#sede');
+    sedeSelect.innerHTML = '<option value="">Sin sede específica</option>' +
+      AMIGOS.map(amigo => `<option value="${amigo}">${amigo}</option>`).join('');
+  }
+  
   function renderAmigosList() {
     const container = $('#amigos-list');
     container.innerHTML = AMIGOS.map(amigo => `
@@ -192,6 +196,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const titulo = $('#titulo').value.trim();
     const ubicacion = $('#ubicacion').value.trim();
     const fecha = $('#fecha').value || today();
+    const puntos = parseInt($('#puntos').value) || 1;
+    const sede = $('#sede').value;
     const checkboxes = document.querySelectorAll('#amigos-list input[type="checkbox"]:checked');
     const asistentes = Array.from(checkboxes).map(cb => cb.value);
     
@@ -218,6 +224,8 @@ document.addEventListener('DOMContentLoaded', function() {
         titulo: titulo,
         ubicacion: ubicacion,
         date: fecha,
+        puntos: puntos,
+        sede: sede,
         asistentes: asistentes
       };
       
@@ -239,6 +247,8 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#titulo').value = '';
     $('#ubicacion').value = '';
     $('#fecha').value = today();
+    $('#puntos').value = '1';
+    $('#sede').value = '';
     document.querySelectorAll('#amigos-list input[type="checkbox"]').forEach(cb => {
       cb.checked = false;
       cb.closest('.amigo-checkbox').classList.remove('selected');
@@ -257,16 +267,20 @@ document.addEventListener('DOMContentLoaded', function() {
   // ==================== ESTADÍSTICAS ====================
   function calcularEstadisticas() {
     const totalJuntadas = juntadas.length;
+    const totalPuntos = juntadas.reduce((sum, j) => sum + j.puntos, 0);
     const stats = new Map();
     
     AMIGOS.forEach(amigo => {
-      stats.set(amigo, { nombre: amigo, asistencias: 0, porcentaje: 0 });
+      stats.set(amigo, { nombre: amigo, asistencias: 0, puntos: 0, porcentaje: 0 });
     });
     
     juntadas.forEach(juntada => {
       juntada.asistentes.forEach(amigo => {
         const stat = stats.get(amigo);
-        if (stat) stat.asistencias++;
+        if (stat) {
+          stat.asistencias++;
+          stat.puntos += juntada.puntos;
+        }
       });
     });
     
@@ -282,9 +296,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     return {
       totalJuntadas,
+      totalPuntos,
       promedioGeneral,
       ranking: Array.from(stats.values())
-        .sort((a, b) => b.asistencias - a.asistencias || a.nombre.localeCompare(b.nombre, 'es'))
+        .sort((a, b) => b.puntos - a.puntos || b.asistencias - a.asistencias || a.nombre.localeCompare(b.nombre, 'es'))
     };
   }
   
@@ -293,6 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     $('#total-juntadas').textContent = stats.totalJuntadas;
     $('#promedio-asistencia').textContent = stats.promedioGeneral + '%';
+    $('#total-puntos').textContent = stats.totalPuntos;
   }
   
   function renderRanking() {
@@ -300,7 +316,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const tbody = $('#tabla-ranking tbody');
     
     if (stats.ranking.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="empty">No hay datos todavía</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">No hay datos todavía</td></tr>';
       return;
     }
     
@@ -316,6 +332,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <td>${badge}</td>
           <td><strong>${stat.nombre}</strong></td>
           <td>${stat.asistencias}</td>
+          <td><strong style="color:var(--good)">${stat.puntos}</strong></td>
           <td>
             <strong>${stat.porcentaje}%</strong>
             <div class="progress-bar">
@@ -327,7 +344,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }).join('');
   }
   
-  // ==================== HISTORIAL ====================
   function renderHistorial() {
     const container = $('#historial');
     
@@ -343,14 +359,23 @@ document.addEventListener('DOMContentLoaded', function() {
         ? `<button class="btn danger eliminar-btn" data-id="${juntada.id}" style="font-size:0.85rem;padding:8px 12px">Eliminar</button>` 
         : '';
       
+      const puntosLabel = juntada.puntos > 1 
+        ? `<span style="background:linear-gradient(135deg, #ff6b35, #06ffa5);padding:4px 10px;border-radius:999px;font-size:0.8rem;font-weight:700;color:#1a1a1a;margin-left:8px">${juntada.puntos} puntos</span>`
+        : '';
+      
+      const sedeInfo = juntada.sede 
+        ? `<span class="muted" style="font-size:0.85rem;margin-left:12px">🏠 Sede: ${juntada.sede}</span>`
+        : '';
+      
       return `
         <div class="historial-item">
           <div class="historial-header">
             <div>
-              <div class="historial-date">${juntada.titulo}</div>
+              <div class="historial-date">${juntada.titulo}${puntosLabel}</div>
               <div style="margin-top:4px">
                 <span class="muted" style="font-size:0.85rem">📍 ${juntada.ubicacion}</span>
                 <span class="muted" style="font-size:0.85rem;margin-left:12px">📅 ${formatDateDMY(juntada.date)}</span>
+                ${sedeInfo}
               </div>
             </div>
             ${deleteBtn}
@@ -372,7 +397,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // ==================== ELIMINAR ====================
   let pendingDeleteId = null;
   const modal = $('#deleteModal');
   const btnCancel = $('#cancelDelete');
@@ -417,19 +441,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.key === 'Escape') closeDeleteModal();
   });
   
-  // ==================== RENDER GENERAL ====================
   function renderAll() {
     renderEstadisticas();
     renderRanking();
     renderHistorial();
   }
   
-  // ==================== INICIALIZACIÓN ====================
   async function init() {
     try {
       console.log('🚀 Iniciando aplicación...');
       juntadas = await store.read();
       $('#fecha').value = today();
+      renderSedeOptions();
       renderAmigosList();
       checkAuth();
       renderAll();
@@ -439,7 +462,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // Auto-refresh cada 30 segundos
   setInterval(async () => {
     try {
       const newData = await store.read();
