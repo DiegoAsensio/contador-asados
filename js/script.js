@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     'Gata',
     'Monti',
     'Nacho',
-    'cuca'
+    'Cuca'
   ].sort((a, b) => a.localeCompare(b, 'es'));
   
   const $ = sel => document.querySelector(sel);
@@ -69,7 +69,8 @@ document.addEventListener('DOMContentLoaded', function() {
             date: row.date,
             puntos: parseInt(row.puntos) || 1,
             sede: row.sede || '',
-            asistentes: JSON.parse(row.asistentes || '[]')
+            asistentes: JSON.parse(row.asistentes || '[]'),
+            bonusSede: row.bonusSede === 'true' || row.bonusSede === true
           };
         } catch (e) {
           console.error('Error parseando fila:', row, e);
@@ -89,7 +90,8 @@ document.addEventListener('DOMContentLoaded', function() {
           date: juntada.date,
           puntos: juntada.puntos,
           sede: juntada.sede || '',
-          asistentes: JSON.stringify(juntada.asistentes)
+          asistentes: JSON.stringify(juntada.asistentes),
+          bonusSede: juntada.bonusSede ? 'true' : 'false'
         }));
         
         await fetch(SHEETDB_URL + '/all', { method: 'DELETE' });
@@ -121,6 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   let juntadas = [];
   let isAdminMode = false;
+  let currentPuntos = 1;
   
   const authCard = $('#auth-card');
   const formCard = $('#form-card');
@@ -128,10 +131,39 @@ document.addEventListener('DOMContentLoaded', function() {
   const authBtn = $('#auth-btn');
   const authError = $('#auth-error');
   
+  function updatePuntosDisplay() {
+    const puntosDisplay = $('#puntos-display');
+    if (puntosDisplay) {
+      puntosDisplay.textContent = currentPuntos;
+    }
+  }
+  
+  function initPuntosCounter() {
+    const puntosMinus = $('#puntos-minus');
+    const puntosPlus = $('#puntos-plus');
+    
+    if (puntosMinus) {
+      puntosMinus.addEventListener('click', () => {
+        if (currentPuntos > 1) {
+          currentPuntos--;
+          updatePuntosDisplay();
+        }
+      });
+    }
+    
+    if (puntosPlus) {
+      puntosPlus.addEventListener('click', () => {
+        currentPuntos++;
+        updatePuntosDisplay();
+      });
+    }
+  }
+  
   function checkAuth() {
     if (isAdminMode) {
       authCard.style.display = 'none';
       formCard.style.display = 'block';
+      initPuntosCounter();
     } else {
       authCard.style.display = 'block';
       formCard.style.display = 'none';
@@ -192,11 +224,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
+  function contarVecesComоSede(amigo) {
+    return juntadas.filter(j => j.sede === amigo).length;
+  }
+  
+  function calcularBonusSede(amigo) {
+    const vecesComoSede = contarVecesComоSede(amigo);
+    return Math.floor(vecesComoSede / 3);
+  }
+  
   async function guardarJuntada() {
     const titulo = $('#titulo').value.trim();
     const ubicacion = $('#ubicacion').value.trim();
     const fecha = $('#fecha').value || today();
-    const puntos = parseInt($('#puntos').value) || 1;
+    const puntos = currentPuntos;
     const sede = $('#sede').value;
     const checkboxes = document.querySelectorAll('#amigos-list input[type="checkbox"]:checked');
     const asistentes = Array.from(checkboxes).map(cb => cb.value);
@@ -219,6 +260,16 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       console.log('💾 Guardando juntada...');
       
+      let bonusSede = false;
+      
+      if (sede) {
+        const vecesAnteriores = contarVecesComоSede(sede);
+        if ((vecesAnteriores + 1) % 3 === 0) {
+          bonusSede = true;
+          console.log(`🎉 ${sede} recibe bonus por 3 veces como sede!`);
+        }
+      }
+      
       const nuevaJuntada = {
         id: genId(),
         titulo: titulo,
@@ -226,14 +277,20 @@ document.addEventListener('DOMContentLoaded', function() {
         date: fecha,
         puntos: puntos,
         sede: sede,
-        asistentes: asistentes
+        asistentes: asistentes,
+        bonusSede: bonusSede
       };
       
       juntadas.push(nuevaJuntada);
       await store.write(juntadas);
       
       console.log('✅ Juntada guardada');
-      alert('✅ Juntada registrada correctamente');
+      
+      if (bonusSede) {
+        alert(`✅ Juntada registrada correctamente\n🎉 ${sede} recibió +1 punto bonus por ser sede 3 veces!`);
+      } else {
+        alert('✅ Juntada registrada correctamente');
+      }
       
       limpiarFormulario();
       renderAll();
@@ -247,7 +304,8 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#titulo').value = '';
     $('#ubicacion').value = '';
     $('#fecha').value = today();
-    $('#puntos').value = '1';
+    currentPuntos = 1;
+    updatePuntosDisplay();
     $('#sede').value = '';
     document.querySelectorAll('#amigos-list input[type="checkbox"]').forEach(cb => {
       cb.checked = false;
@@ -282,6 +340,14 @@ document.addEventListener('DOMContentLoaded', function() {
           stat.puntos += juntada.puntos;
         }
       });
+    });
+    
+    AMIGOS.forEach(amigo => {
+      const bonusTotal = calcularBonusSede(amigo);
+      const stat = stats.get(amigo);
+      if (stat && bonusTotal > 0) {
+        stat.puntos += bonusTotal;
+      }
     });
     
     stats.forEach((stat, amigo) => {
@@ -363,6 +429,10 @@ document.addEventListener('DOMContentLoaded', function() {
         ? `<span style="background:linear-gradient(135deg, #ff6b35, #06ffa5);padding:4px 10px;border-radius:999px;font-size:0.8rem;font-weight:700;color:#1a1a1a;margin-left:8px">${juntada.puntos} puntos</span>`
         : '';
       
+      const bonusBadge = juntada.bonusSede
+        ? `<span class="bonus-badge">✨ Bonus Sede +1</span>`
+        : '';
+      
       const sedeInfo = juntada.sede 
         ? `<span class="muted" style="font-size:0.85rem;margin-left:12px">🏠 Sede: ${juntada.sede}</span>`
         : '';
@@ -371,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="historial-item">
           <div class="historial-header">
             <div>
-              <div class="historial-date">${juntada.titulo}${puntosLabel}</div>
+              <div class="historial-date">${juntada.titulo}${puntosLabel}${bonusBadge}</div>
               <div style="margin-top:4px">
                 <span class="muted" style="font-size:0.85rem">📍 ${juntada.ubicacion}</span>
                 <span class="muted" style="font-size:0.85rem;margin-left:12px">📅 ${formatDateDMY(juntada.date)}</span>
@@ -451,7 +521,10 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       console.log('🚀 Iniciando aplicación...');
       juntadas = await store.read();
-      $('#fecha').value = today();
+      const fechaInput = $('#fecha');
+      if (fechaInput) {
+        fechaInput.value = today();
+      }
       renderSedeOptions();
       renderAmigosList();
       checkAuth();
