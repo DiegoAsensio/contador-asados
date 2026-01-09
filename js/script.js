@@ -21,8 +21,23 @@ document.addEventListener('DOMContentLoaded', function() {
     : Math.random().toString(36).slice(2) + Date.now().toString(36));
   
   const formatDateDMY = (date) => {
-    const [y, m, d] = date.split('-');
-    return `${d}/${m}/${y}`;
+    // Si la fecha es un número de Excel, convertirlo
+    if (typeof date === 'number' || (!isNaN(date) && !date.includes('-'))) {
+      const numDate = typeof date === 'string' ? parseFloat(date) : date;
+      // Los números de Excel empiezan desde 1900-01-01 = 1
+      const excelEpoch = new Date(1899, 11, 30);
+      const dateObj = new Date(excelEpoch.getTime() + numDate * 86400000);
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const y = dateObj.getFullYear();
+      return `${d}/${m}/${y}`;
+    }
+    // Si la fecha viene en formato YYYY-MM-DD
+    if (date && date.includes('-')) {
+      const [y, m, d] = date.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    return date;
   };
   
   const store = {
@@ -224,12 +239,30 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  function contarVecesComоSede(amigo) {
+  // Función para contar cuántas veces alguien ha sido sede ANTES de una juntada específica
+  function contarVecesComoSedeHasta(amigo, fechaLimite) {
+    // Ordenar juntadas por fecha
+    const juntadasOrdenadas = juntadas.slice().sort((a, b) => {
+      const dateA = typeof a.date === 'number' ? a.date : (a.date || '0');
+      const dateB = typeof b.date === 'number' ? b.date : (b.date || '0');
+      return dateA < dateB ? -1 : 1;
+    });
+    
+    let count = 0;
+    for (const j of juntadasOrdenadas) {
+      // Si llegamos a la fecha límite, parar
+      if (j.date === fechaLimite) break;
+      if (j.sede === amigo) count++;
+    }
+    return count;
+  }
+  
+  function contarVecesComoSede(amigo) {
     return juntadas.filter(j => j.sede === amigo).length;
   }
   
   function calcularBonusSede(amigo) {
-    const vecesComoSede = contarVecesComоSede(amigo);
+    const vecesComoSede = contarVecesComoSede(amigo);
     return Math.floor(vecesComoSede / 3);
   }
   
@@ -263,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
       let bonusSede = false;
       
       if (sede) {
-        const vecesAnteriores = contarVecesComоSede(sede);
+        const vecesAnteriores = contarVecesComoSede(sede);
         if ((vecesAnteriores + 1) % 3 === 0) {
           bonusSede = true;
           console.log(`🎉 ${sede} recibe bonus por 3 veces como sede!`);
@@ -418,7 +451,11 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
-    const sorted = juntadas.slice().sort((a, b) => a.date < b.date ? 1 : -1);
+    const sorted = juntadas.slice().sort((a, b) => {
+      const dateA = typeof a.date === 'number' ? a.date : (a.date || '0');
+      const dateB = typeof b.date === 'number' ? b.date : (b.date || '0');
+      return dateA < dateB ? 1 : -1;
+    });
     
     container.innerHTML = sorted.map(juntada => {
       const deleteBtn = isAdminMode 
@@ -429,9 +466,17 @@ document.addEventListener('DOMContentLoaded', function() {
         ? `<span style="background:linear-gradient(135deg, #ff6b35, #06ffa5);padding:4px 10px;border-radius:999px;font-size:0.8rem;font-weight:700;color:#1a1a1a;margin-left:8px">${juntada.puntos} puntos</span>`
         : '';
       
-      const bonusBadge = juntada.bonusSede
-        ? `<span class="bonus-badge">✨ Bonus Sede +1</span>`
-        : '';
+      // Verificar si en ESTA juntada específica se alcanzó el bonus de 3 sedes
+      let bonusBadge = '';
+      if (juntada.sede) {
+        const vecesAntesDeEsta = contarVecesComoSedeHasta(juntada.sede, juntada.date);
+        const vecesConEsta = vecesAntesDeEsta + 1;
+        
+        // Si con esta juntada se alcanzó un múltiplo de 3, mostrar el bonus
+        if (vecesConEsta % 3 === 0) {
+          bonusBadge = `<span class="bonus-badge">✨ Bonus Sede +1 (${juntada.sede} llegó a ${vecesConEsta} veces)</span>`;
+        }
+      }
       
       const sedeInfo = juntada.sede 
         ? `<span class="muted" style="font-size:0.85rem;margin-left:12px">🏠 Sede: ${juntada.sede}</span>`
