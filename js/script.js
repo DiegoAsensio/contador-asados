@@ -138,7 +138,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
   let juntadas = [];
   let isAdminMode = false;
-  let currentPuntos = 1;
   
   const authCard = $('#auth-card');
   const formCard = $('#form-card');
@@ -146,39 +145,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const authBtn = $('#auth-btn');
   const authError = $('#auth-error');
   
-  function updatePuntosDisplay() {
-    const puntosDisplay = $('#puntos-display');
-    if (puntosDisplay) {
-      puntosDisplay.textContent = currentPuntos;
-    }
-  }
-  
-  function initPuntosCounter() {
-    const puntosMinus = $('#puntos-minus');
-    const puntosPlus = $('#puntos-plus');
-    
-    if (puntosMinus) {
-      puntosMinus.addEventListener('click', () => {
-        if (currentPuntos > 1) {
-          currentPuntos--;
-          updatePuntosDisplay();
-        }
-      });
-    }
-    
-    if (puntosPlus) {
-      puntosPlus.addEventListener('click', () => {
-        currentPuntos++;
-        updatePuntosDisplay();
-      });
-    }
-  }
-  
   function checkAuth() {
     if (isAdminMode) {
       authCard.style.display = 'none';
       formCard.style.display = 'block';
-      initPuntosCounter();
     } else {
       authCard.style.display = 'block';
       formCard.style.display = 'none';
@@ -270,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const titulo = $('#titulo').value.trim();
     const ubicacion = $('#ubicacion').value.trim();
     const fecha = $('#fecha').value || today();
-    const puntos = currentPuntos;
+    const puntos = parseInt($('#puntos').value) || 1;
     const sede = $('#sede').value;
     const checkboxes = document.querySelectorAll('#amigos-list input[type="checkbox"]:checked');
     const asistentes = Array.from(checkboxes).map(cb => cb.value);
@@ -337,8 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#titulo').value = '';
     $('#ubicacion').value = '';
     $('#fecha').value = today();
-    currentPuntos = 1;
-    updatePuntosDisplay();
+    $('#puntos').value = 1;
     $('#sede').value = '';
     document.querySelectorAll('#amigos-list input[type="checkbox"]').forEach(cb => {
       cb.checked = false;
