@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', function() {
     'Gata',
     'Monti',
     'Nacho',
-    'Cuca'
+    'Cuca',
+    'Choco'
   ].sort((a, b) => a.localeCompare(b, 'es'));
   
   const $ = sel => document.querySelector(sel);
