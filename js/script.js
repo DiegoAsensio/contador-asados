@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Si la fecha es un número de Excel, convertirlo
     if (typeof date === 'number' || (!isNaN(date) && !date.includes('-'))) {
       const numDate = typeof date === 'string' ? parseFloat(date) : date;
-      // Los números de Excel empiezan desde 1900-01-01 = 1
       const excelEpoch = new Date(1899, 11, 30);
       const dateObj = new Date(excelEpoch.getTime() + numDate * 86400000);
       const d = String(dateObj.getDate()).padStart(2, '0');
@@ -33,7 +32,6 @@ document.addEventListener('DOMContentLoaded', function() {
       const y = dateObj.getFullYear();
       return `${d}/${m}/${y}`;
     }
-    // Si la fecha viene en formato YYYY-MM-DD
     if (date && date.includes('-')) {
       const [y, m, d] = date.split('-');
       return `${d}/${m}/${y}`;
@@ -210,9 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Función para contar cuántas veces alguien ha sido sede ANTES de una juntada específica
   function contarVecesComoSedeHasta(amigo, fechaLimite) {
-    // Ordenar juntadas por fecha
     const juntadasOrdenadas = juntadas.slice().sort((a, b) => {
       const dateA = typeof a.date === 'number' ? a.date : (a.date || '0');
       const dateB = typeof b.date === 'number' ? b.date : (b.date || '0');
@@ -221,7 +217,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let count = 0;
     for (const j of juntadasOrdenadas) {
-      // Si llegamos a la fecha límite, parar
       if (j.date === fechaLimite) break;
       if (j.sede === amigo) count++;
     }
@@ -421,13 +416,14 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
+    // Orden cronológico inverso: más reciente arriba
     const sorted = juntadas.slice().sort((a, b) => {
       const dateA = typeof a.date === 'number' ? a.date : (a.date || '0');
       const dateB = typeof b.date === 'number' ? b.date : (b.date || '0');
       return dateA < dateB ? 1 : -1;
     });
     
-    container.innerHTML = sorted.map(juntada => {
+    const items = sorted.map(juntada => {
       const deleteBtn = isAdminMode 
         ? `<button class="btn danger eliminar-btn" data-id="${juntada.id}" style="font-size:0.85rem;padding:8px 12px">Eliminar</button>` 
         : '';
@@ -436,13 +432,10 @@ document.addEventListener('DOMContentLoaded', function() {
         ? `<span style="background:linear-gradient(135deg, #ff6b35, #06ffa5);padding:4px 10px;border-radius:999px;font-size:0.8rem;font-weight:700;color:#1a1a1a;margin-left:8px">${juntada.puntos} puntos</span>`
         : '';
       
-      // Verificar si en ESTA juntada específica se alcanzó el bonus de 3 sedes
       let bonusBadge = '';
       if (juntada.sede) {
         const vecesAntesDeEsta = contarVecesComoSedeHasta(juntada.sede, juntada.date);
         const vecesConEsta = vecesAntesDeEsta + 1;
-        
-        // Si con esta juntada se alcanzó un múltiplo de 3, mostrar el bonus
         if (vecesConEsta % 3 === 0) {
           bonusBadge = `<span class="bonus-badge">✨ Bonus Sede +1 (${juntada.sede} llegó a ${vecesConEsta} veces)</span>`;
         }
@@ -474,6 +467,15 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
       `;
     }).join('');
+
+    // Wrap en contenedor scrolleable
+    container.innerHTML = `
+      <div class="historial-wrapper">
+        <div class="historial-scroll">
+          ${items}
+        </div>
+      </div>
+    `;
     
     if (isAdminMode) {
       document.querySelectorAll('.eliminar-btn').forEach(btn => {
