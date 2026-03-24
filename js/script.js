@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   const formatDateDMY = (date) => {
     // Si la fecha es un número de Excel, convertirlo
-    if (typeof date === 'number' || (!isNaN(date) && !date.includes('-'))) {
+    if (typeof date === 'number' || (date && !isNaN(date) && !String(date).includes('-'))) {
       const numDate = typeof date === 'string' ? parseFloat(date) : date;
       const excelEpoch = new Date(1899, 11, 30);
       const dateObj = new Date(excelEpoch.getTime() + numDate * 86400000);
@@ -32,11 +32,32 @@ document.addEventListener('DOMContentLoaded', function() {
       const y = dateObj.getFullYear();
       return `${d}/${m}/${y}`;
     }
-    if (date && date.includes('-')) {
-      const [y, m, d] = date.split('-');
+    if (date && String(date).includes('-')) {
+      const [y, m, d] = String(date).split('-');
       return `${d}/${m}/${y}`;
     }
     return date;
+  };
+
+  // Convierte cualquier formato de fecha a número comparable para ordenar
+  // Soporta: número serial Excel (46029), string YYYY-MM-DD, string DD/MM/YYYY
+  const dateToSortKey = (date) => {
+    if (!date) return 0;
+    // Número serial de Excel
+    if (typeof date === 'number') return date;
+    const s = String(date).trim();
+    if (!isNaN(s) && !s.includes('-') && !s.includes('/')) return parseFloat(s);
+    // YYYY-MM-DD → número YYYYMMDD comparable
+    if (s.includes('-')) {
+      const [y, m, d] = s.split('-');
+      return parseInt(y) * 10000 + parseInt(m) * 100 + parseInt(d);
+    }
+    // DD/MM/YYYY → número YYYYMMDD comparable
+    if (s.includes('/')) {
+      const [d, m, y] = s.split('/');
+      return parseInt(y) * 10000 + parseInt(m) * 100 + parseInt(d);
+    }
+    return 0;
   };
   
   const store = {
@@ -209,11 +230,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   function contarVecesComoSedeHasta(amigo, fechaLimite) {
-    const juntadasOrdenadas = juntadas.slice().sort((a, b) => {
-      const dateA = typeof a.date === 'number' ? a.date : (a.date || '0');
-      const dateB = typeof b.date === 'number' ? b.date : (b.date || '0');
-      return dateA < dateB ? -1 : 1;
-    });
+    const juntadasOrdenadas = juntadas.slice().sort((a, b) => dateToSortKey(a.date) - dateToSortKey(b.date));
     
     let count = 0;
     for (const j of juntadasOrdenadas) {
@@ -417,11 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Orden cronológico inverso: más reciente arriba
-    const sorted = juntadas.slice().sort((a, b) => {
-      const dateA = typeof a.date === 'number' ? a.date : (a.date || '0');
-      const dateB = typeof b.date === 'number' ? b.date : (b.date || '0');
-      return dateA < dateB ? 1 : -1;
-    });
+    const sorted = juntadas.slice().sort((a, b) => dateToSortKey(b.date) - dateToSortKey(a.date));
     
     const items = sorted.map(juntada => {
       const deleteBtn = isAdminMode 
